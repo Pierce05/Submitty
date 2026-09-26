@@ -324,8 +324,10 @@ class NavigationView extends AbstractView {
         // limited access graders and full access graders can preview/view the grading interface only if they are allowed by the min grading group
         $im_a_grader = $this->core->getUser()->accessGrading() && $this->core->getUser()->getGroup() <= $gradeable->getMinGradingGroup() && $date_limitation;
 
-        // students can only view the submissions & grading interface if its a peer grading assignment
-        $im_a_peer_grader = $date_limitation && $gradeable->hasPeerComponent() && (($this->core->getUser()->getGroup() === User::GROUP_STUDENT && !empty($this->core->getQueries()->getPeerAssignment($gradeable->getId(), $this->core->getUser()->getId()))) || $this->core->getUser()->accessGrading());
+        // students and staff (limited/full access graders) can only view the submissions and grading interface
+        // if they actually have a peer grading assignment for this gradeable
+        $im_a_peer_grader = $date_limitation && $gradeable->hasPeerComponent()
+            && $this->core->getAccess()->isGradedGradeableInPeerAssignment($gradeable, null, $this->core->getUser());
 
         // TODO: look through this logic and put into new access system
         return $im_a_peer_grader || $im_a_grader || $im_allowed_to_view_submissions;
@@ -716,7 +718,14 @@ class NavigationView extends AbstractView {
                 if ($gradeable->isTaGrading()) {
                     $array["progress"] = 100 * $progress_bar;
                 }
-                if ($gradeable->hasPeerComponent() && $this->core->getUser()->accessGrading()) {
+                if (
+                    $gradeable->hasPeerComponent()
+                    && $this->core->getUser()->accessGrading()
+                    && (
+                        $this->core->getUser()->getGroup() <= $gradeable->getMinGradingGroup()
+                        || $this->core->getAccess()->isGradedGradeableInPeerAssignment($gradeable, null, $this->core->getUser())
+                    )
+                ) {
                     $peer_percent = $gradeable->getPeerGradingProgress();
                     if (!is_nan($peer_percent)) {
                         $array["peer_progress"] = 100 * $peer_percent;
@@ -779,13 +788,13 @@ class NavigationView extends AbstractView {
                         $progress = $TA_percent * 100;
                     }
                     if ($gradeable->hasPeerComponent()) {
-                        if ($this->core->getUser()->accessGrading()) {
+                        if ($this->core->getUser()->accessGrading() && $this->core->getUser()->getGroup() <= $gradeable->getMinGradingGroup()) {
                             $peer_percent = $gradeable->getPeerGradingProgress();
                             if (!is_nan($peer_percent)) {
                                 $peer_progress = $peer_percent * 100;
                             }
                         }
-                        else {
+                        elseif ($this->core->getAccess()->isGradedGradeableInPeerAssignment($gradeable, null, $this->core->getUser())) {
                             $peer_percent = $gradeable->getAssignedPeerGradingProgress($this->core->getUser());
                             if (!is_nan($peer_percent)) {
                                 $peer_progress = $peer_percent * 100;

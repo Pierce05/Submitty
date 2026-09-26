@@ -1869,11 +1869,13 @@ class ElectronicGraderController extends AbstractController {
             $this->core->addErrorMessage("You do not have permission to view submissions until grading opens.");
             $this->core->redirect($this->core->buildCourseUrl());
         }
-        $peer = $gradeable->hasPeerComponent() && $this->core->getUser()->getGroup() == User::GROUP_STUDENT;
+        // Route students and limited access graders through the peer-assignment-based order
+        // when they actually have a peer grading assignment; full access graders/instructors
+        // keep using the normal section-based order since they can already see everything.
+        $peer = $gradeable->hasPeerComponent()
+            && !$this->core->getUser()->accessFullGrading()
+            && $this->core->getAccess()->isGradedGradeableInPeerAssignment($gradeable, null, $this->core->getUser());
         $team = $gradeable->isTeamAssignment();
-        if ($gradeable->hasPeerComponent() && $this->core->getUser()->getGroup() == User::GROUP_STUDENT) {
-            $peer = true;
-        }
         $blind_grading = $this->amIBlindGrading($gradeable, $this->core->getUser(), $peer);
 
         // If $who_id is empty string then this request came from the TA grading interface navigation buttons
