@@ -14,7 +14,7 @@
     <b><span class="component-title-text">{{ component.title|escape }}</span></b>
 </span>
 
-{% if component.page > 0 %}
+{% if component.page != 0 and component.page != -1 %}
     <span class="page-number-view col-no-gutters">
         <i>(Page # <span class="component-page-number-text">{{ component.page }}</span>)</i>
     </span>

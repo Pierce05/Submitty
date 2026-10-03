@@ -17,7 +17,7 @@ class Component(object):
         self.student_comment = ""
         self.is_text = False
         self.is_peer_component = False
-        self.page = 0
+        self.page = "0"
         self.order = order
         self.marks = []
 
@@ -30,7 +30,7 @@ class Component(object):
         if "gc_is_text" in component:
             self.is_text = component["gc_is_text"] is True
         if "gc_page" in component:
-            self.page = int(component["gc_page"])
+            self.page = str(component["gc_page"])
 
         if self.is_text:
             self.lower_clamp = 0

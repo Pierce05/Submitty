@@ -1053,7 +1053,7 @@ class Gradeable extends AbstractModel {
         float $upper_clamp,
         bool $text,
         bool $peer,
-        int $pdf_page
+        string|int $pdf_page
     ) {
         $component = new Component($this->core, $this, [
             'title' => $title,

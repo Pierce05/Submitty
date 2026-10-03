@@ -2947,8 +2947,12 @@ class ElectronicGraderController extends AbstractController {
             $this->core->getOutput()->renderJsonFail('Invalid upper_clamp parameter');
             return;
         }
-        if (strval(intval($page)) !== $page) {
-            $this->core->getOutput()->renderJsonFail('Invalid page parameter');
+        try {
+            $page = Component::normalizePage($page);
+        }
+        catch (\InvalidArgumentException $e) {
+            $this->core->getOutput()->renderJsonFail($e->getMessage());
+            return;
         }
 
         // Get the gradeable
@@ -3140,10 +3144,10 @@ class ElectronicGraderController extends AbstractController {
                 throw new \InvalidArgumentException('Missing component id in pages array');
             }
             $page = $pages[$component->getId()];
-            if (!is_int($page)) {
-                throw new \InvalidArgumentException('All page values must be integers');
+            if (!is_int($page) && !is_string($page)) {
+                throw new \InvalidArgumentException('All page values must be integers or page strings');
             }
-            $component->setPage(max(intval($page), -1));
+            $component->setPage($page);
         }
     }
 
@@ -3179,7 +3183,7 @@ class ElectronicGraderController extends AbstractController {
         }
 
         try {
-            $page = $gradeable->isPdfUpload() ? ($gradeable->isStudentPdfUpload() ? Component::PDF_PAGE_STUDENT : 1) : Component::PDF_PAGE_NONE;
+            $page = $gradeable->isPdfUpload() ? ($gradeable->isStudentPdfUpload() ? Component::PDF_PAGE_STUDENT : '1') : Component::PDF_PAGE_NONE;
 
             // Once we've parsed the inputs and checked permissions, perform the operation
             $component = $gradeable->addComponent(

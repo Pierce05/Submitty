@@ -62,7 +62,7 @@ type Gradeable = {
     components: Component[];
 };
 type Component = {
-    id: number; title: string; ta_comment: string; student_comment: string; page: number; lower_clamp: number; default: number; max_value: number; upper_clamp: number; is_itempool_linked: boolean; itempool_option: string; peer: boolean;
+    id: number; title: string; ta_comment: string; student_comment: string; page: string; lower_clamp: number; default: number; max_value: number; upper_clamp: number; is_itempool_linked: boolean; itempool_option: string; peer: boolean;
     marks: Mark[];
 };
 interface GradedComponent extends Component, ComponentGradeInfo {
@@ -285,7 +285,7 @@ async function ajaxGetGradeableRubric(gradeable_id: string) {
  * @throws {Error} Throws except when the response returns status 'success'
  * @returns {Object}
  */
-async function ajaxSaveComponent(gradeable_id: string | undefined, component_id: number, title: string | number | string[] | undefined, ta_comment: string | number | string[] | undefined, student_comment: string | number | string[] | undefined, page: number, lower_clamp: number, default_value: number, max_value: number, upper_clamp: number, is_itempool_linked: boolean, itempool_option: string | number | string[] | undefined, peer: boolean) {
+async function ajaxSaveComponent(gradeable_id: string | undefined, component_id: number, title: string | number | string[] | undefined, ta_comment: string | number | string[] | undefined, student_comment: string | number | string[] | undefined, page: string, lower_clamp: number, default_value: number, max_value: number, upper_clamp: number, is_itempool_linked: boolean, itempool_option: string | number | string[] | undefined, peer: boolean) {
     let response: Record<string, string> | null;
     try {
         response = await $.ajax({
@@ -1313,14 +1313,14 @@ function getAllComponentsFromDOM() {
  * @param {int} component_id
  * @returns {int}
  */
-function getComponentPageNumber(component_id: number) {
+function getComponentPageNumber(component_id: number): string {
     const domElement = getComponentJQuery(component_id);
     if (isInstructorEditEnabled()) {
         const pageNumberInput: JQuery<HTMLInputElement> = domElement.find('input.page-number');
-        return parseInt(pageNumberInput.val()!);
+        return String(pageNumberInput.val() ?? '').replace(/\s+/g, '');
     }
     else {
-        return parseInt(domElement.attr('data-page')!);
+        return domElement.attr('data-page') ?? '0';
     }
 }
 
@@ -1362,7 +1362,7 @@ function getComponentFromDOM(component_id: number): Component {
         title: domElement.attr('data-title') as string,
         ta_comment: domElement.attr('data-ta_comment') as string,
         student_comment: domElement.attr('data-student_comment') as string,
-        page: parseInt(domElement.attr('data-page')!),
+        page: domElement.attr('data-page') ?? '0',
         lower_clamp: parseFloat(domElement.attr('data-lower_clamp')!),
         default: parseFloat(domElement.attr('data-default')!),
         max_value: parseFloat(domElement.attr('data-max_value')!),
@@ -3094,10 +3094,19 @@ async function openComponentGrading(component_id: number) {
 
     await injectGradingComponent(component, graded_component, isEditModeEnabled(), true);
 
-    const page = getComponentPageNumber(component_id);
-    if (page) {
-        scrollToPage(page);
+    const first_page = getFirstPage(getComponentPageNumber(component_id));
+    if (first_page) {
+        scrollToPage(first_page);
     }
+}
+
+/**
+ * First page of a page string like "3", "3-5" or "3-4,10".
+ * Returns 0 for "none", -1 for "student-assigned" or unparseable input.
+ */
+function getFirstPage(pages: string): number {
+    const first = parseInt(pages.split(',')[0].split('-')[0], 10);
+    return Number.isNaN(first) ? -1 : first;
 }
 
 /**

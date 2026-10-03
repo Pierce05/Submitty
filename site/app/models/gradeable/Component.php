@@ -52,8 +52,8 @@ class Component extends AbstractModel {
      * @var int The order of this component in the gradeable */
     protected $order = -1;
     /** @prop
-     * @var int The pdf page this component will reside in */
-    protected $page = -1;
+     * @var string The pdf page(s): "-1" (student-assigned), "0" (none), or a list like "3", "3-5", "3,5", "3-4,10" */
+    protected $page = self::PDF_PAGE_STUDENT;
 
     /** @prop
      * @var bool Whether this component is linked to some itempool or not */
@@ -73,10 +73,10 @@ class Component extends AbstractModel {
      * @var bool If any submitters have grades for this component */
     private $any_grades = false;
 
-    /** @var int Pass to setPage to indicate student-assigned pdf page */
-    const PDF_PAGE_STUDENT = -1;
-    /** @var int Pass to setPage to indicate no pdf page */
-    const PDF_PAGE_NONE = 0;
+    /** @var string Pass to setPage to indicate student-assigned pdf page */
+    const PDF_PAGE_STUDENT = '-1';
+    /** @var string Pass to setPage to indicate no pdf page */
+    const PDF_PAGE_NONE = '0';
 
     /**
      * Component constructor.
@@ -206,12 +206,41 @@ class Component extends AbstractModel {
     }
 
     /**
-     * Sets the page number for this component
-     * @param int $page
+     * Sets the page(s) for this component
+     * @param string|int $page
+     * @throws \InvalidArgumentException
      */
-    public function setPage(int $page) {
-        $this->page = max($page, -1);
+    public function setPage($page) {
+        $this->page = self::normalizePage($page);
         $this->modified = true;
+    }
+
+    /**
+     * @param string|int $page "-1", "0", or a list of pages/ranges like "3-4,10"
+     * @throws \InvalidArgumentException
+     */
+    public static function normalizePage($page): string {
+        if (is_int($page)) {
+            $page = (string) max($page, -1);
+        }
+        if (!is_string($page)) {
+            throw new \InvalidArgumentException('Page must be a string or integer');
+        }
+        $page = preg_replace('/\s+/', '', $page);
+        if ($page === '-1' || $page === '0') {
+            return $page;
+        }
+        $part = '[1-9][0-9]*(?:-[1-9][0-9]*)?';
+        if (!preg_match("/^$part(?:,$part)*$/", $page)) {
+            throw new \InvalidArgumentException('Pages must be like 3, 3-5, 3,5 or 3-4,10');
+        }
+        foreach (explode(',', $page) as $item) {
+            $bounds = explode('-', $item);
+            if (count($bounds) === 2 && intval($bounds[0]) > intval($bounds[1])) {
+                throw new \InvalidArgumentException("Invalid page range: $item");
+            }
+        }
+        return $page;
     }
 
     const point_properties = [
@@ -591,7 +620,7 @@ class Component extends AbstractModel {
         $this->modified = true;
     }
 
-    public function getPage(): int {
+    public function getPage(): string {
         return $this->page;
     }
 

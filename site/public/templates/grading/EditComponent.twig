@@ -23,12 +23,12 @@
             <div class="col component-title-container">
                 <input id="component-title-{{component.id}}" class="component-title" type="text" value="{{ component.title|escape }}" placeholder="Component Title" onkeyup="onComponentTitleChange(this)" data-testid="peer-component-title"/>
             </div>
-            {% if component.page > 0 %}
+            {% if component.page != 0 and component.page != -1 %}
                 <div class="col-no-gutters page-label">
                     <label for="page-number-{{component.id}}">Page #</label>
                 </div>
                 <div class="col-no-gutters">
-                    <input id="page-number-{{component.id}}" class="page-number" type="number" step="1" min="1" value="{{ component.page }}" onchange="onComponentPageNumberChange(this)" onmouseup="onComponentPageNumberChange(this)">
+                    <input id="page-number-{{component.id}}" class="page-number" type="text" value="{{ component.page }}" pattern="[1-9][0-9]*(-[1-9][0-9]*)?(,[1-9][0-9]*(-[1-9][0-9]*)?)*" placeholder="3 or 3-4,10" title="Pages like 3, 3-5, 3,5 or 3-4,10" onchange="onComponentPageNumberChange(this)">
                 </div>
             {% else %}
                 <input class="page-number" value="{{ component.page }}" aria-label="page number" hidden/>
